@@ -1,2 +1,2 @@
-# healthapi
-Application programming interface for health database &amp; information system
+# comhealth api
+Local Flask application programming interface for community health data.
