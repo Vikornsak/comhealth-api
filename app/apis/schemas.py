@@ -63,7 +63,7 @@ class ServiceSchema(SQLAlchemyAutoSchema):
 
     _links = ma.Hyperlinks(
         {
-            "self": ma.URLFor("apis.get_service", values=dict(service_no="<ServiceNo>")),
+            "self": ma.URLFor("apis.serviceresource", values=dict(service_no="<ServiceNo>")),
         }
     )
 
