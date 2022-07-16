@@ -1,13 +1,21 @@
 import csv
+from http import HTTPStatus
 from io import StringIO
 
 import pandas as pd
 from flask import jsonify
+from flask_jwt_extended import create_access_token
 
 from . import apis
 from flask_restful import Resource
 from app.extensions import db
 from app.apis.schemas import *
+
+
+class TokenResource(Resource):
+    def get(self):
+        access_token = create_access_token(identity=17558)
+        return {'access_token': access_token}, HTTPStatus.OK
 
 
 class CustomerListResource(Resource):
