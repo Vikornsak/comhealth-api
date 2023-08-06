@@ -2,9 +2,10 @@ import csv
 from http import HTTPStatus
 from io import StringIO
 
+import arrow as arrow
 import pandas as pd
-from flask import jsonify
-from flask_jwt_extended import create_access_token
+from flask import jsonify, request
+from flask_jwt_extended import create_access_token, jwt_required
 
 from . import apis
 from flask_restful import Resource
@@ -13,8 +14,13 @@ from app.apis.schemas import *
 
 
 class TokenResource(Resource):
-    def get(self):
-        access_token = create_access_token(identity=17558)
+    def post(self):
+        username = request.json.get("username", None)
+        password = request.json.get("password", None)
+        user = db.session.query(User).filter_by(username=username, password=password)
+        if not user:
+            return jsonify({"msg": "Bad username or password"}), 401
+        access_token = create_access_token(identity=username)
         return {'access_token': access_token}, HTTPStatus.OK
 
 
@@ -31,10 +37,26 @@ class CustomerResource(Resource):
         return {'data': employee_schema.dumps(employee)}
 
 
+class ServiceListResource(Resource):
+    @jwt_required()
+    def get(self):
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        start_date = arrow.get(start_date, 'YYYY-MM-DD').date()
+        end_date = arrow.get(end_date, 'YYYY-MM-DD').date()
+        if start_date and end_date:
+            query = db.session.query(Services).filter(Services.ServiceDate.between(start_date, end_date))
+            return {'data': services_schema.dumps(query.all())}
+        return HTTPStatus.BAD_REQUEST
+
+
 class ServiceResource(Resource):
-    def get(self, service_no):
-        service = db.session.query(Services).get_or_404(service_no)
-        return {'data': service_schema.dumps(service)}
+    @jwt_required()
+    def get(self, service_no=None):
+        if service_no:
+            service = db.session.query(Services).get_or_404(service_no)
+            return service_schema.dump(service)
+        return HTTPStatus.BAD_REQUEST
 
 
 class TestListResource(Resource):

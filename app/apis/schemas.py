@@ -7,6 +7,7 @@ Lab = Base.classes.Lab
 Test = Base.classes.Test
 Employee = Base.classes.Employee
 Services = Base.classes.Services
+User = Base.classes.User
 
 Services.employee = relationship(Employee,
                                  primaryjoin=Employee.cmsCode == Services.cmsCode,
