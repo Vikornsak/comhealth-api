@@ -12,6 +12,7 @@ from flask_restful import Resource
 from app.extensions import db
 from app.apis.schemas import *
 
+from datetime import datetime, timedelta  # BY THON
 
 class TokenResource(Resource):
     def post(self):
@@ -81,8 +82,25 @@ def get_tests_by_month():
     return jsonify(df.to_dict())
 
 
-@apis.route('/customers-by-month')
+
+# Update 02/08/67
+@apis.route('/customers-by-month', methods=['GET'])
 def get_customers_by_month():
-    df = pd.read_sql_query("select count(*) as 'NumberCustomer', ServiceDate from Services where ServiceDate>='2021-01-01' group by ServiceDate;",
-                           con=db.engine)
-    return jsonify(df.to_dict())
+
+    default_start_date = (datetime.now() - timedelta(days=3650)).strftime('%Y-%m-%d')
+    start_date = request.args.get('start_date', default_start_date)  # ค่าเริ่มต้นคือ "วันที่ปัจจุบัน ย้อนหลัง 10 ปี" ถ้าไม่ได้ระบุพารามิเตอร์
+    end_date = request.args.get('end_date', datetime.now().strftime('%Y-%m-%d'))  # ค่าเริ่มต้นคือวันที่ปัจจุบัน ถ้าไม่ได้ระบุพารามิเตอร์
+
+    query = f"""
+    SELECT COUNT(*) AS 'NumberCustomer', ServiceDate 
+    FROM Services 
+    WHERE ServiceDate BETWEEN '{start_date}' AND '{end_date}'
+    GROUP BY ServiceDate;
+    """
+    df = pd.read_sql_query(query, con=db.engine)
+    return jsonify(df.to_dict(orient='records')) # Ref https://thon.me/2024/08/02/python-df-to_dictorientrecords-vs-df-to_dict/
+    # Using
+    # Request all parameters ->  http://127.0.0.1:8080/api/v1.0/customers-by-month?start_date=2020-01-01&end_date=2020-12-31
+    # Only use start_date ->  http://127.0.0.1:8080/api/v1.0/customers-by-month?start_date=2020-01-01
+    # Only use end_date ->  http://127.0.0.1:8080/api/v1.0/customers-by-month?end_date=2019-01-01
+    # default start date  (Current date, past 10 years)-> http://127.0.0.1:8080/api/v1.0/customers-by-month
