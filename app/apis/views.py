@@ -104,3 +104,27 @@ def get_customers_by_month():
     # Only use start_date ->  http://127.0.0.1:8080/api/v1.0/customers-by-month?start_date=2020-01-01
     # Only use end_date ->  http://127.0.0.1:8080/api/v1.0/customers-by-month?end_date=2019-01-01
     # default start date  (Current date, past 10 years)-> http://127.0.0.1:8080/api/v1.0/customers-by-month
+
+
+
+# Update 02/08/67
+@apis.route('/customer-result', methods=['GET'])
+def get_customer_result():
+
+    mobile = request.args.get('mobile')
+    fname = request.args.get('fname')
+    lname = request.args.get('lname')
+
+    query = f"""
+        SELECT * FROM [cmsLIS_test].[dbo].Employee A
+        INNER JOIN [cmsLIS_test].[dbo].[Physical_Exam] B
+        ON A.cmsCode = B.cmsCode
+        WHERE A.Mobile ='{mobile}' AND A.Fname = '{fname}' AND A.Lname = '{lname}' 
+        ORDER BY B.[ServiceDate] DESC;
+    """
+
+    df = pd.read_sql_query(query, con=db.engine)
+    return jsonify(df.to_dict(orient='records'))
+
+# Using
+    # Request all parameters ->  http://127.0.0.1:8080/api/v1.0/customer-result?mobile=081-7551996&fname=กนกวรรณ&lname=กิตตินิยม
