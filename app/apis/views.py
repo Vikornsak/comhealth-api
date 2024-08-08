@@ -27,7 +27,7 @@ class TokenResource(Resource):
 
 
 @apis.route('/employees/<string:hnnumber>', methods=['GET'])
-# @jwt_required()
+@jwt_required()
 def get_employee_with_HN(hnnumber):
 
 
@@ -73,7 +73,7 @@ def get_employee_with_HN(hnnumber):
 
 
 @apis.route('/services/<string:serno>', methods=['GET'])
-# @jwt_required()
+@jwt_required()
 def get_employee_with_services(serno):
 
 
@@ -111,7 +111,7 @@ def get_employee_with_services(serno):
 
 
 @apis.route('/serviceslabindex_testing/<string:serno>', methods=['GET'])
-# @jwt_required()
+@jwt_required()
 def get_employee_with_serviceslabindex_test(serno):
 
 
