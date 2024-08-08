@@ -6,6 +6,7 @@ from sqlalchemy.ext.automap import automap_base
 from app.extensions import db, ma, api, jwt
 
 
+
 # engine = create_engine('mssql+pyodbc://10.4.101.16/cmsLIS?driver=SQL+Server+Native+Client+11.0')
 
 
@@ -31,9 +32,12 @@ from app.apis.views import *
 
 api.init_app(api_blueprint)
 api.add_resource(TokenResource, '/token')
-api.add_resource(CustomerListResource, '/customers')
-api.add_resource(CustomerResource, '/customers/<int:cms_code>')
-api.add_resource(ServiceListResource, '/services')
-api.add_resource(ServiceResource, '/services/<service_no>')
-api.add_resource(TestListResource, '/tests')
+#api.add_resource(CustomerListResource, '/customers')
+#api.add_resource(CustomerResource, '/customers/<int:cms_code>')
+#api.add_resource(ServiceListResource, '/services')
+#api.add_resource(ServiceResource, '/services/<service_no>')
+#api.add_resource(TestListResource, '/tests')
 app.register_blueprint(api_blueprint)
+
+
+

@@ -1,0 +1,149 @@
+erDiagram
+    User {
+        String username PK
+        String password
+    }
+
+    Employee {
+        String cmsCode PK
+        String CustID
+        String DeptCode
+        String email
+        String EmpID
+        String prename
+        String Fname
+        String Mname
+        String Lname
+        String Mobile
+    }
+
+    Services {
+        String ServiceNo PK
+        DateTime ServiceDate
+        String CustID
+        String Barcode
+        String CID
+        String email
+        String EmpID
+        String Status
+        String cmsCode FK
+        DateTime CurrentDate
+        Boolean Serum_chk
+        Boolean CBC_chk
+        Boolean U_chk
+        Boolean ST_chk
+        Boolean IsValidate
+        String ReportBy
+        DateTime FinishTime
+        DateTime LastApprovedTime
+        DateTime ValidateTime
+        DateTime ReportTime
+        Boolean IsSendToHost
+        String OFname
+        String OLname
+        Integer OAge
+        String OEmpStatusCode
+        String ODeptName
+        String OSubDept1Name
+        String OSubDept2Name
+        String LabComment
+        String UserRequest
+        Boolean isLabGetSample
+    }
+
+    Physical_Exam {
+        String ServiceNo  PK
+        DateTime ServiceDate
+        String Barcode
+        String cmsCode FK
+        Float Weight
+        Float Height
+        Integer HeartRate
+        Integer Systolic
+        Integer Diastolic
+    }
+
+    Lab {
+        String ServiceNo PK
+        DateTime ServiceDate
+        String Barcode
+        String TCode FK
+        String TestResult
+        Float Price
+        String ResultBy
+        String Profile
+        Boolean Invalid
+        Boolean ShowInReceive
+        Boolean IsApproved
+        String ApprovedBy
+        Boolean IsSendToHost
+        DateTime ApprovedTime
+        Float TimeUsed
+        Float WorkingTime
+        String Status
+        String Other
+        Boolean IsValidate
+        String ValidateBy
+        DateTime FinishTime
+        DateTime LastApprovedTime
+        DateTime ValidateTime
+        DateTime ReportTime
+        String RefValue
+        Boolean Critical
+        Boolean isLabReceive
+        String Comment
+    }
+
+    Test {
+        String TCode PK
+        String PrintIndex
+        String Test
+        Float Price
+        String Ref
+        Boolean IsProfile
+        String Department
+        String SubDepartment
+        String GovCode
+        String Unit
+        String RefValue
+        Boolean ShowInReceive
+        String TestNamePrintResult
+        String TestNamePrintRecieve
+        Float TimeUsed
+        String TCode2
+        String Sp_Test
+        String RefBookTH
+        String RefBookENG
+        String TestNormalBook
+        String TestSpBookOut
+        Integer TcodeNum
+        String SendMsg
+    }
+
+    X_Ray {
+        String ServiceNo PK
+        DateTime ServiceDate
+        String Barcode
+        String BarCodeFull
+        String CustID
+        Integer cmsCode FK
+        Integer XRayNo
+        Text Chest
+        String Impression
+        Text Result_Thai
+        String Radiologist
+        String Technician
+        Boolean Normal
+        String Finishdate
+        String Status
+        DateTime XrayDate
+        String ACCESSION_NO
+        String X_RayCarID
+        Integer idDocServ
+    }
+
+    Employee ||--o{ Services: "has"
+    Services ||--|{ Physical_Exam: "has"
+    Services ||--|{ X_Ray: "has"
+    Services ||--o{ Lab: "has"
+    Lab ||--|| Test: "references"

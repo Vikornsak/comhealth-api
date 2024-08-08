@@ -6,13 +6,13 @@ import arrow as arrow
 import pandas as pd
 from flask import jsonify, request
 from flask_jwt_extended import create_access_token, jwt_required
-
+from sqlalchemy.orm import joinedload
 from . import apis
 from flask_restful import Resource
 from app.extensions import db
-from app.apis.schemas import *
+from app.schemas import *
 
-from datetime import datetime, timedelta  # BY THON
+
 
 class TokenResource(Resource):
     def post(self):
@@ -25,106 +25,118 @@ class TokenResource(Resource):
         return {'access_token': access_token}, HTTPStatus.OK
 
 
-class CustomerListResource(Resource):
-    def get(self):
-        query = db.session.query(Employee).limit(2)
-        return {'data': employees_schema.dumps(query)}
+
+@apis.route('/employees/<string:hnnumber>', methods=['GET'])
+# @jwt_required()
+def get_employee_with_HN(hnnumber):
 
 
-class CustomerResource(Resource):
-    def get(self, cms_code):
-        employee = db.session.query(Employee).get(cms_code)
-        print(employee.services)
-        return {'data': employee_schema.dumps(employee)}
+    try:
 
 
-class ServiceListResource(Resource):
-    @jwt_required()
-    def get(self):
-        start_date = request.args.get('start_date')
-        end_date = request.args.get('end_date')
-        start_date = arrow.get(start_date, 'YYYY-MM-DD').date()
-        end_date = arrow.get(end_date, 'YYYY-MM-DD').date()
-        if start_date and end_date:
-            query = db.session.query(Services).filter(Services.ServiceDate.between(start_date, end_date))
-            return {'data': services_schema.dumps(query.all())}
-        return HTTPStatus.BAD_REQUEST
+        # Define the schema
+        employee_schema = EmployeeSchema()
+        services_schema = ServicesSchema()
+        physical_exam_schema = PhysicalExamSchema()
+        xray_schema = XRaySchema()
+        lab_schema = LabSchema()
+
+        # Fetch the employee with all related data
+        employee = db.session.query(Employee).options(
+            joinedload(Employee.services).joinedload(Services.physical_exam),
+            joinedload(Employee.services).joinedload(Services.x_ray),
+            joinedload(Employee.services).joinedload(Services.labs).joinedload(Lab.test)
+        ).filter_by(HN=hnnumber).first()
+
+        if employee is None:
+            return jsonify({'message': 'Employee not found'}), 404
+
+            # Serialize the employee data
+        employee_data = employee_schema.dump(employee)
+
+        for service in employee.services:
+            service_data = services_schema.dump(service)
+            service_data['physical_exam'] = physical_exam_schema.dump(service.physical_exam)
+            service_data['x_ray'] = xray_schema.dump(service.x_ray)
+            service_data['labs'] = [lab_schema.dump(lab) for lab in service.labs]
+
+            employee_data['services'].append(service_data)
+
+        # Serialize the data
 
 
-class ServiceResource(Resource):
-    @jwt_required()
-    def get(self, service_no=None):
-        if service_no:
-            service = db.session.query(Services).get_or_404(service_no)
-            return service_schema.dump(service)
-        return HTTPStatus.BAD_REQUEST
+        return jsonify(employee_data, 200)
 
-
-class TestListResource(Resource):
-    def get(self):
-        # test_table = db.Table('Test', db.metadata, autoload=True, autoload_with=db.engine)
-        return {'message': 'done', 'data': tests_schema.dumps(db.session.query(Test).all())}
-
-
-def generate(df):
-    data = StringIO()
-    w = csv.writer(data)
-
-    # write header
-    w.writerows(df.to_csv())
-    return data.getvalue()
-
-
-@apis.route('/tests-by-month')
-def get_tests_by_month():
-    df = pd.read_sql_query("select ServiceDate,TCode, count(*) as 'Counts' from Lab where ServiceDate>='2022-01-01' group by ServiceDate,TCode order by ServiceDate;",
-                           con=db.engine)
-    return jsonify(df.to_dict())
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
 
 
 
-# Update 02/08/67
-@apis.route('/customers-by-month', methods=['GET'])
-def get_customers_by_month():
-
-    default_start_date = (datetime.now() - timedelta(days=3650)).strftime('%Y-%m-%d')
-    start_date = request.args.get('start_date', default_start_date)  # ค่าเริ่มต้นคือ "วันที่ปัจจุบัน ย้อนหลัง 10 ปี" ถ้าไม่ได้ระบุพารามิเตอร์
-    end_date = request.args.get('end_date', datetime.now().strftime('%Y-%m-%d'))  # ค่าเริ่มต้นคือวันที่ปัจจุบัน ถ้าไม่ได้ระบุพารามิเตอร์
-
-    query = f"""
-    SELECT COUNT(*) AS 'NumberCustomer', ServiceDate 
-    FROM Services 
-    WHERE ServiceDate BETWEEN '{start_date}' AND '{end_date}'
-    GROUP BY ServiceDate;
-    """
-    df = pd.read_sql_query(query, con=db.engine)
-    return jsonify(df.to_dict(orient='records')) # Ref https://thon.me/2024/08/02/python-df-to_dictorientrecords-vs-df-to_dict/
-    # Using
-    # Request all parameters ->  http://127.0.0.1:8080/api/v1.0/customers-by-month?start_date=2020-01-01&end_date=2020-12-31
-    # Only use start_date ->  http://127.0.0.1:8080/api/v1.0/customers-by-month?start_date=2020-01-01
-    # Only use end_date ->  http://127.0.0.1:8080/api/v1.0/customers-by-month?end_date=2019-01-01
-    # default start date  (Current date, past 10 years)-> http://127.0.0.1:8080/api/v1.0/customers-by-month
+@apis.route('/services/<string:serno>', methods=['GET'])
+# @jwt_required()
+def get_employee_with_services(serno):
 
 
+    try:
 
-# Update 02/08/67
-@apis.route('/customer-result', methods=['GET'])
-def get_customer_result():
+        # Define the schemas
+        services_schema = ServicesSchema()
+        physical_exam_schema = PhysicalExamSchema()
+        xray_schema = XRaySchema()
+        lab_schema = LabSchema()
 
-    mobile = request.args.get('mobile')
-    fname = request.args.get('fname')
-    lname = request.args.get('lname')
+        # Fetch the employee with all related data
+        # Fetch the service with all related data
+        service = db.session.query(Services).options(
+            joinedload(Services.physical_exam),
+            joinedload(Services.x_ray),
+            joinedload(Services.labs).joinedload(Lab.test)
+        ).filter_by(ServiceNo=serno).first()
 
-    query = f"""
-        SELECT * FROM [cmsLIS_test].[dbo].Employee A
-        INNER JOIN [cmsLIS_test].[dbo].[Physical_Exam] B
-        ON A.cmsCode = B.cmsCode
-        WHERE A.Mobile ='{mobile}' AND A.Fname = '{fname}' AND A.Lname = '{lname}' 
-        ORDER BY B.[ServiceDate] DESC;
-    """
+        if service is None:
+            return jsonify({'message': 'Service not found'}), 404
 
-    df = pd.read_sql_query(query, con=db.engine)
-    return jsonify(df.to_dict(orient='records'))
+        # Serialize the service data
+        service_data = services_schema.dump(service)
+        service_data['physical_exam'] = physical_exam_schema.dump(service.physical_exam)
+        service_data['x_ray'] = xray_schema.dump(service.x_ray)
+        service_data['labs'] = [lab_schema.dump(lab) for lab in service.labs]
 
-# Using
-    # Request all parameters ->  http://127.0.0.1:8080/api/v1.0/customer-result?mobile=081-7551996&fname=กนกวรรณ&lname=กิตตินิยม
+        return jsonify(service_data, 200)
+
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
+
+
+
+
+@apis.route('/serviceslabindex_testing/<string:serno>', methods=['GET'])
+# @jwt_required()
+def get_employee_with_serviceslabindex_test(serno):
+
+
+    try:
+
+
+        # Define the schema
+
+        services_schema = ServicesSchema()
+        physical_exam_schema = PhysicalExamSchema()
+        xray_schema = XRaySchema()
+        lab_schema = LabSchema()
+
+        # Fetch the employee with all related data
+        service = (db.session.query(Services).filter_by(ServiceNo=serno).first())
+
+        if service is None:
+            return jsonify({'message': 'Service not found'}), 404
+
+            # Serialize the employee data
+        service_data = services_schema.dump(service)
+
+
+
+        return jsonify(service_data, 200)
+
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
