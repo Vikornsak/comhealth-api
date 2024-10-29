@@ -8,5 +8,3 @@ db = SQLAlchemy()
 ma = Marshmallow()
 api = Api()
 jwt = JWTManager()
-
-
